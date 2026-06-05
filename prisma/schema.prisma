@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int               @id @default(autoincrement())
+  username          String
+  email             String            @unique
+  password          String
+  initialPokemons   Boolean?          @default(false)
+  favorites         FavoritePokemon[]
+  team              TeamPokemon[]
+
+  @@map("users")
+}
+
+model FavoritePokemon {
+  id        Int  @id @default(autoincrement())
+  userId    Int
+  pokeapiId Int
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pokeapiId])
+  @@map("favorite_pokemon")
+}
+
+model TeamPokemon {
+  id        Int  @id @default(autoincrement())
+  userId    Int
+  pokeapiId Int
+  slot      Int
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pokeapiId])
+  @@unique([userId, slot])
+  @@map("team_pokemon")
+}
