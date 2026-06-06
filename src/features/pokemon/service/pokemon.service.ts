@@ -4,7 +4,10 @@ import {
   PokemonResponseDto,
 } from '../dto/list-pokemon.dto';
 import { PaginatedData } from 'src/common/types/jsend.types';
-import { PokemonCatalogResource } from '../models/pokemon-catalog.model';
+import {
+  PokemonCatalogResource,
+  PokemonCatalogType,
+} from '../models/pokemon-catalog.model';
 import {
   POKEMON_CATALOG_PORT,
   type PokemonCatalogPort,
@@ -16,6 +19,10 @@ export class PokemonService {
     @Inject(POKEMON_CATALOG_PORT)
     private readonly pokemonCatalog: PokemonCatalogPort,
   ) {}
+
+  getTypes(): Promise<PokemonCatalogType[]> {
+    return this.pokemonCatalog.getTypes();
+  }
 
   async findAll(
     filters: ListPokemonQueryDto,

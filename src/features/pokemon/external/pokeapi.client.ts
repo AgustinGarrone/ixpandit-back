@@ -7,7 +7,6 @@ import {
   PokeApiTypeDetail,
   PokeApiTypeResponse,
 } from './pokeapi.types';
-
 @Injectable()
 export class PokeApiClient {
   private readonly client: AxiosInstance;
@@ -44,6 +43,12 @@ export class PokeApiClient {
 
   getAbilityDetail(url: string): Promise<PokeApiAbilityDetail> {
     return this.getByUrl<PokeApiAbilityDetail>(url);
+  }
+
+  getTypes(): Promise<PokeApiPaginatedResponse> {
+    return this.get<PokeApiPaginatedResponse>('/type', {
+      params: { limit: 100 },
+    });
   }
 
   private getByUrl<T>(url: string): Promise<T> {

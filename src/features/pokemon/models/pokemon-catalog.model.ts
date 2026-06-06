@@ -15,3 +15,8 @@ export interface PokemonCatalogDetail {
   type: string;
   abilities: string[];
 }
+
+export interface PokemonCatalogType {
+  name: string;
+  slug: string;
+}

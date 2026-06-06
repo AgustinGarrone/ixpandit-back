@@ -22,6 +22,22 @@ export class ListPokemonQueryDto extends PaginationRequestQuery {
   type?: string;
 }
 
+export class PokemonTypeResponseDto {
+  @ApiProperty({
+    type: String,
+    description: 'Display name of the Pokemon type',
+    example: 'Fire',
+  })
+  name: string;
+
+  @ApiProperty({
+    type: String,
+    description: 'Slug to use in the type filter query param',
+    example: 'fire',
+  })
+  slug: string;
+}
+
 export class PokemonResponseDto {
   @ApiProperty({
     type: Number,

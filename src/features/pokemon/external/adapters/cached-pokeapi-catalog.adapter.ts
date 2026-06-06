@@ -4,6 +4,7 @@ import {
   PokemonCatalogDetail,
   PokemonCatalogPage,
   PokemonCatalogResource,
+  PokemonCatalogType,
 } from '../../models/pokemon-catalog.model';
 import { PokemonCatalogPort } from '../../ports/pokemon-catalog.port';
 import { PokeApiCatalogAdapter } from './pokeapi-catalog.adapter';
@@ -41,6 +42,11 @@ export class CachedPokeApiCatalogAdapter implements PokemonCatalogPort {
     this.ttlMs,
   );
 
+  private readonly typesListCache = new LruTtlCache<PokemonCatalogType[]>(
+    1,
+    this.ttlMs,
+  );
+
   constructor(private readonly delegate: PokeApiCatalogAdapter) {}
 
   getPage(offset: number, limit: number): Promise<PokemonCatalogPage> {
@@ -69,5 +75,11 @@ export class CachedPokeApiCatalogAdapter implements PokemonCatalogPort {
 
   getDetail(url: string): Promise<PokemonCatalogDetail> {
     return this.detailCache.getOrSet(url, () => this.delegate.getDetail(url));
+  }
+
+  getTypes(): Promise<PokemonCatalogType[]> {
+    return this.typesListCache.getOrSet('types:all', () =>
+      this.delegate.getTypes(),
+    );
   }
 }

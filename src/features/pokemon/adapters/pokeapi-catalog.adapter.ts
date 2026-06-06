@@ -9,6 +9,7 @@ import {
   PokemonCatalogDetail,
   PokemonCatalogPage,
   PokemonCatalogResource,
+  PokemonCatalogType,
 } from '../models/pokemon-catalog.model';
 import { PokemonCatalogPort } from '../ports/pokemon-catalog.port';
 
@@ -64,6 +65,17 @@ export class PokeApiCatalogAdapter implements PokemonCatalogPort {
       type: types.map((entry) => this.formatName(entry.name)).join(', '),
       abilities: abilities.map((entry) => this.formatName(entry.name)),
     };
+  }
+
+  async getTypes(): Promise<PokemonCatalogType[]> {
+    const response = await this.pokeApiClient.getTypes();
+
+    return response.results
+      .map((entry) => ({
+        name: this.formatName(entry.name),
+        slug: entry.name,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   private formatName(value: string): string {
