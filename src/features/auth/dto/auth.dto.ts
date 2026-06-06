@@ -4,11 +4,16 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CreateUserDTO {
   @ApiProperty({
     type: String,
-    description: 'Unique username for the new account',
+    description: 'Unique username for the new account (4 to 15 characters)',
     example: 'ash',
+    minLength: 4,
+    maxLength: 15,
   })
   @IsString({
     message: 'The "username" field must be a string.',
+  })
+  @Length(4, 15, {
+    message: 'The username must be between 4 and 15 characters.',
   })
   @IsNotEmpty({ message: 'The "username" field is required.' })
   username: string;
@@ -29,16 +34,16 @@ export class CreateUserDTO {
 
   @ApiProperty({
     type: String,
-    description: 'Account password (6 to 15 characters)',
+    description: 'Account password (6 to 20 characters)',
     example: 'pikachu123',
     minLength: 6,
-    maxLength: 15,
+    maxLength: 20,
   })
   @IsString({
     message: 'The "password" field must be a string.',
   })
-  @Length(6, 15, {
-    message: 'The password must be between 6 and 15 characters.',
+  @Length(6, 20, {
+    message: 'The password must be between 6 and 20 characters.',
   })
   @IsNotEmpty({ message: 'The "password" field is required.' })
   password: string;
@@ -61,16 +66,16 @@ export class LoginUserDTO {
 
   @ApiProperty({
     type: String,
-    description: 'Account password (6 to 15 characters)',
+    description: 'Account password (6 to 20 characters)',
     example: 'pikachu123',
     minLength: 6,
-    maxLength: 15,
+    maxLength: 20,
   })
   @IsString({
     message: 'The "password" field must be a string.',
   })
-  @Length(6, 15, {
-    message: 'The password must be between 6 and 15 characters.',
+  @Length(6, 20, {
+    message: 'The password must be between 6 and 20 characters.',
   })
   @IsNotEmpty({ message: 'The "password" field is required.' })
   password: string;
@@ -78,11 +83,11 @@ export class LoginUserDTO {
 
 export class LoginResponseDto {
   @ApiProperty({
-    type: Number,
+    type: String,
     description: 'Unique identifier of the authenticated user',
-    example: 1,
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
   })
-  id: number;
+  id: string;
 
   @ApiProperty({
     type: String,

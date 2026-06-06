@@ -1,14 +1,14 @@
 import { PrismaService } from 'src/config/database/prisma.service';
 
 type PrismaModelDelegate = {
-  findUnique: (args: { where: { id: number } }) => Promise<unknown>;
+  findUnique: (args: { where: { id: string } }) => Promise<unknown>;
   findMany: (args?: { where?: Record<string, unknown> }) => Promise<unknown[]>;
   create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
   update: (args: {
-    where: { id: number };
+    where: { id: string };
     data: Record<string, unknown>;
   }) => Promise<unknown>;
-  delete: (args: { where: { id: number } }) => Promise<unknown>;
+  delete: (args: { where: { id: string } }) => Promise<unknown>;
   count: (args?: { where?: Record<string, unknown> }) => Promise<number>;
 };
 
@@ -18,7 +18,7 @@ export abstract class BaseRepository<T> {
     protected readonly model: PrismaModelDelegate,
   ) {}
 
-  findById(id: number): Promise<T | null> {
+  findById(id: string): Promise<T | null> {
     return this.model.findUnique({ where: { id } }) as Promise<T | null>;
   }
 
@@ -30,11 +30,11 @@ export abstract class BaseRepository<T> {
     return this.model.create({ data }) as Promise<T>;
   }
 
-  update(id: number, data: Record<string, unknown>): Promise<T> {
+  update(id: string, data: Record<string, unknown>): Promise<T> {
     return this.model.update({ where: { id }, data }) as Promise<T>;
   }
 
-  delete(id: number): Promise<T> {
+  delete(id: string): Promise<T> {
     return this.model.delete({ where: { id } }) as Promise<T>;
   }
 

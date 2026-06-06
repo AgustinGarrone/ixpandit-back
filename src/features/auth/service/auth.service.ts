@@ -16,7 +16,7 @@ export class AuthService {
     private readonly jwtAuthService: JwtService,
   ) {}
 
-  findByPk(id: number) {
+  findByPk(id: string) {
     return this.userRepository.findById(id);
   }
 

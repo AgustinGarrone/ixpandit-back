@@ -5,7 +5,7 @@ export class JwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context
       .switchToHttp()
-      .getRequest<{ user?: { userId: number } }>();
+      .getRequest<{ user?: { userId: string } }>();
     return request.user != null;
   }
 }

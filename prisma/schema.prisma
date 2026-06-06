@@ -8,10 +8,10 @@ datasource db {
 }
 
 model User {
-  id                Int               @id @default(autoincrement())
-  username          String
+  id                String            @id @default(uuid())
+  username          String            @db.VarChar(15)
   email             String            @unique
-  password          String
+  password          String            @db.VarChar(255)
   initialPokemons   Boolean?          @default(false)
   favorites         FavoritePokemon[]
   team              TeamPokemon[]
@@ -20,21 +20,21 @@ model User {
 }
 
 model FavoritePokemon {
-  id        Int  @id @default(autoincrement())
-  userId    Int
+  id        String @id @default(uuid())
+  userId    String
   pokeapiId Int
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, pokeapiId])
   @@map("favorite_pokemon")
 }
 
 model TeamPokemon {
-  id        Int  @id @default(autoincrement())
-  userId    Int
+  id        String @id @default(uuid())
+  userId    String
   pokeapiId Int
   slot      Int
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, pokeapiId])
   @@unique([userId, slot])
