@@ -21,7 +21,7 @@ export class PokemonService {
     filters: ListPokemonQueryDto,
   ): Promise<PaginatedData<PokemonResponseDto>> {
     const page = filters.page ?? 1;
-    const limit = filters.limit ?? 20;
+    const limit = filters.limit ?? 10;
     const { nameLike, type } = filters;
 
     if (!type && !nameLike) {
