@@ -9,7 +9,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { JSendStatus, JSendSuccess } from 'src/common/types/jsend.types';
+import { JSendSuccess } from 'src/common/types/jsend.types';
 
 @ApiTags('Auth')
 @Controller('auth')
