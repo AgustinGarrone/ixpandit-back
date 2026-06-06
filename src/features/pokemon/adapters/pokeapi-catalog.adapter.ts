@@ -58,6 +58,7 @@ export class PokeApiCatalogAdapter implements PokemonCatalogPort {
     ]);
 
     return {
+      id: detail.id,
       name: this.formatName(detail.name),
       imageUrl: detail.sprites.front_default ?? '',
       type: types.map((entry) => this.formatName(entry.name)).join(', '),

@@ -9,6 +9,7 @@ export interface PokemonCatalogPage {
 }
 
 export interface PokemonCatalogDetail {
+  id: number;
   name: string;
   imageUrl: string;
   type: string;

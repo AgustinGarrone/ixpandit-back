@@ -24,6 +24,13 @@ export class ListPokemonQueryDto extends PaginationRequestQuery {
 
 export class PokemonResponseDto {
   @ApiProperty({
+    type: Number,
+    description: 'The ID of the Pokemon',
+    example: 1,
+  })
+  id: number;
+
+  @ApiProperty({
     type: String,
     description: 'The name of the Pokemon',
     example: 'Pikachu',
