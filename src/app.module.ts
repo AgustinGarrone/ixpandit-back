@@ -5,12 +5,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getThrottlerConfig } from './config/throttler/throttler.config';
 import { AuthModule } from './features/auth/auth.module';
+import { FavoritesModule } from './features/favorites/favorites.module';
 import { PokemonModule } from './features/pokemon/pokemon.module';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot(getThrottlerConfig()),
     AuthModule,
+    FavoritesModule,
     PokemonModule,
   ],
   controllers: [AppController],

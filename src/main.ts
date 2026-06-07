@@ -30,6 +30,7 @@ async function bootstrap() {
     .setTitle('Pokemon IXP API')
     .setDescription('API for the Pokemon IXP project')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/v1/docs', app, document);

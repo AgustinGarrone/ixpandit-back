@@ -14,29 +14,20 @@ model User {
   password          String            @db.VarChar(255)
   initialPokemons   Boolean?          @default(false)
   favorites         FavoritePokemon[]
-  team              TeamPokemon[]
 
   @@map("users")
 }
 
 model FavoritePokemon {
-  id        String @id @default(uuid())
+  id        String   @id @default(uuid())
   userId    String
   pokeapiId Int
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  imageUrl  String
+  type      String
+  abilities String[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, pokeapiId])
   @@map("favorite_pokemon")
-}
-
-model TeamPokemon {
-  id        String @id @default(uuid())
-  userId    String
-  pokeapiId Int
-  slot      Int
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, pokeapiId])
-  @@unique([userId, slot])
-  @@map("team_pokemon")
 }
