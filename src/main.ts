@@ -12,7 +12,9 @@ async function bootstrap() {
   app.useGlobalInterceptors(new JSendInterceptor());
   app.useGlobalFilters(new JSendExceptionFilter());
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health'],
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

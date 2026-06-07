@@ -99,8 +99,7 @@ export class FavoritesService {
   }
 
   private buildPokemonUrl(pokeapiId: number): string {
-    const baseUrl =
-      process.env.POKEAPI_BASE_URL ?? 'https://pokeapi.co/api/v2';
+    const baseUrl = process.env.POKEAPI_BASE_URL ?? 'https://pokeapi.co/api/v2';
 
     return `${baseUrl}/pokemon/${pokeapiId}/`;
   }

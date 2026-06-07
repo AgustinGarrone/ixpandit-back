@@ -6,11 +6,13 @@ import { AppService } from './app.service';
 import { getThrottlerConfig } from './config/throttler/throttler.config';
 import { AuthModule } from './features/auth/auth.module';
 import { FavoritesModule } from './features/favorites/favorites.module';
+import { HealthModule } from './health/health.module';
 import { PokemonModule } from './features/pokemon/pokemon.module';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot(getThrottlerConfig()),
+    HealthModule,
     AuthModule,
     FavoritesModule,
     PokemonModule,
