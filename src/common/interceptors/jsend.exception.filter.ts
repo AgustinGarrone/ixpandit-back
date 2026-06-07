@@ -16,10 +16,16 @@ export class JSendExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const error = exception.getResponse();
+      const message =
+        status === Number(HttpStatus.TOO_MANY_REQUESTS)
+          ? 'Too many requests. Please try again later.'
+          : typeof error === 'string'
+            ? error
+            : (error as { message?: string | string[] }).message;
 
       return response.status(status).json({
         status: status < 500 ? JSendStatus.FAIL : JSendStatus.ERROR,
-        message: typeof error === 'string' ? error : (error as any).message,
+        message,
         meta: {
           timestamp: new Date().toISOString(),
         },

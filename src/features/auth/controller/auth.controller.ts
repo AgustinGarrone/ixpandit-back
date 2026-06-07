@@ -1,4 +1,5 @@
 import { Controller, Post, Body } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from '../service/auth.service';
 import { CreateUserDTO, LoginResponseDto, LoginUserDTO } from '../dto/auth.dto';
 import {
@@ -7,11 +8,14 @@ import {
   ApiConflictResponse,
   ApiOkResponse,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { authThrottlerOptions } from 'src/config/throttler/throttler.config';
 import { JSendSuccess } from 'src/common/types/jsend.types';
 
 @ApiTags('Auth')
+@Throttle({ default: authThrottlerOptions })
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -26,6 +30,7 @@ export class AuthController {
     description: 'Validation error',
   })
   @ApiConflictResponse({ description: 'Username or email already exists' })
+  @ApiTooManyRequestsResponse({ description: 'Too many registration attempts' })
   async register(
     @Body() userObject: CreateUserDTO,
   ): Promise<JSendSuccess<LoginResponseDto>> {
@@ -47,6 +52,7 @@ export class AuthController {
     description: 'Validation error',
   })
   @ApiUnauthorizedResponse({ description: 'Email or password is incorrect' })
+  @ApiTooManyRequestsResponse({ description: 'Too many login attempts' })
   async login(
     @Body() userData: LoginUserDTO,
   ): Promise<JSendSuccess<LoginResponseDto>> {
