@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   ListPokemonQueryDto,
   PokemonResponseDto,
@@ -22,6 +22,19 @@ export class PokemonService {
 
   getTypes(): Promise<PokemonCatalogType[]> {
     return this.pokemonCatalog.getTypes();
+  }
+
+  async getRandom(): Promise<PokemonResponseDto> {
+    const catalogPage = await this.pokemonCatalog.getPage(0, 1);
+    const randomOffset = Math.floor(Math.random() * catalogPage.total);
+    const randomPage = await this.pokemonCatalog.getPage(randomOffset, 1);
+    const resource = randomPage.resources[0];
+
+    if (!resource) {
+      throw new NotFoundException('No pokemon found');
+    }
+
+    return this.pokemonCatalog.getDetail(resource.url);
   }
 
   async findAll(

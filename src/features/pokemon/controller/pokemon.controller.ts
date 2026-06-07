@@ -1,5 +1,11 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/features/auth/jwt/jwt-auth-guard';
 import {
   ListPokemonQueryDto,
   PokemonResponseDto,
@@ -24,6 +30,23 @@ export class PokemonController {
     return {
       data: types,
       message: 'Pokemon types fetched successfully',
+    };
+  }
+
+  @Get('random')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({
+    description: 'Random Pokemon from the full PokeAPI catalog',
+    type: JSendSuccess<PokemonResponseDto>,
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  async getRandom(): Promise<JSendSuccess<PokemonResponseDto>> {
+    const pokemon = await this.pokemonService.getRandom();
+
+    return {
+      data: pokemon,
+      message: 'Random Pokemon fetched successfully',
     };
   }
 
