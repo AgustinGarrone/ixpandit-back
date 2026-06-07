@@ -18,15 +18,19 @@ export class PokeApiCatalogAdapter implements PokemonCatalogPort {
   constructor(private readonly pokeApiClient: PokeApiClient) {}
 
   async getPage(offset: number, limit: number): Promise<PokemonCatalogPage> {
-    const response = await this.pokeApiClient.getPokemonList(offset, limit);
+    try {
+      const response = await this.pokeApiClient.getPokemonList(offset, limit);
 
-    return {
-      resources: response.results.map((resource) => ({
-        name: resource.name,
-        url: resource.url,
-      })),
-      total: response.count,
-    };
+      return {
+        resources: response.results.map((resource) => ({
+          name: resource.name,
+          url: resource.url,
+        })),
+        total: response.count,
+      };
+    } catch (error) {
+      this.handlePokeApiError(error, 'Pokemon catalog not found');
+    }
   }
 
   async findByType(type: string): Promise<PokemonCatalogResource[]> {
@@ -43,39 +47,47 @@ export class PokeApiCatalogAdapter implements PokemonCatalogPort {
   }
 
   async getDetail(url: string): Promise<PokemonCatalogDetail> {
-    const detail = await this.pokeApiClient.getPokemonDetail(url);
+    try {
+      const detail = await this.pokeApiClient.getPokemonDetail(url);
 
-    const [types, abilities] = await Promise.all([
-      Promise.all(
-        detail.types.map((entry) =>
-          this.pokeApiClient.getTypeDetail(entry.type.url),
+      const [types, abilities] = await Promise.all([
+        Promise.all(
+          detail.types.map((entry) =>
+            this.pokeApiClient.getTypeDetail(entry.type.url),
+          ),
         ),
-      ),
-      Promise.all(
-        detail.abilities.map((entry) =>
-          this.pokeApiClient.getAbilityDetail(entry.ability.url),
+        Promise.all(
+          detail.abilities.map((entry) =>
+            this.pokeApiClient.getAbilityDetail(entry.ability.url),
+          ),
         ),
-      ),
-    ]);
+      ]);
 
-    return {
-      id: detail.id,
-      name: this.formatName(detail.name),
-      imageUrl: detail.sprites.front_default ?? '',
-      type: types.map((entry) => this.formatName(entry.name)).join(', '),
-      abilities: abilities.map((entry) => this.formatName(entry.name)),
-    };
+      return {
+        id: detail.id,
+        name: this.formatName(detail.name),
+        imageUrl: detail.sprites.front_default ?? '',
+        type: types.map((entry) => this.formatName(entry.name)).join(', '),
+        abilities: abilities.map((entry) => this.formatName(entry.name)),
+      };
+    } catch (error) {
+      this.handlePokeApiError(error, 'Pokemon not found');
+    }
   }
 
   async getTypes(): Promise<PokemonCatalogType[]> {
-    const response = await this.pokeApiClient.getTypes();
+    try {
+      const response = await this.pokeApiClient.getTypes();
 
-    return response.results
-      .map((entry) => ({
-        name: this.formatName(entry.name),
-        slug: entry.name,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      return response.results
+        .map((entry) => ({
+          name: this.formatName(entry.name),
+          slug: entry.name,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      this.handlePokeApiError(error, 'Pokemon types not found');
+    }
   }
 
   private formatName(value: string): string {
