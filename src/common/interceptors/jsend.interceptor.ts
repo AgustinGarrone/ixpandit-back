@@ -4,6 +4,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import {
@@ -15,6 +16,11 @@ import {
 @Injectable()
 export class JSendInterceptor<T> implements NestInterceptor<T> {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { id?: string }>();
+    const requestId = request.id;
+
     return next.handle().pipe(
       map((response: JSendSuccess<T>) => {
         const { data, message, meta, status } = response;
@@ -26,6 +32,7 @@ export class JSendInterceptor<T> implements NestInterceptor<T> {
             message,
             meta: {
               timestamp: new Date().toISOString(),
+              requestId,
               pagination: data.pagination,
               ...meta,
             },
@@ -38,6 +45,7 @@ export class JSendInterceptor<T> implements NestInterceptor<T> {
           message,
           meta: {
             timestamp: new Date().toISOString(),
+            requestId,
             ...meta,
           },
         };

@@ -4,6 +4,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { isAxiosError } from 'axios';
+import { AppLoggerService } from 'src/common/logging/app-logger.service';
 import { PokeApiClient } from '../pokeapi.client';
 import {
   PokemonCatalogDetail,
@@ -15,7 +16,12 @@ import { PokemonCatalogPort } from '../../ports/pokemon-catalog.port';
 
 @Injectable()
 export class PokeApiCatalogAdapter implements PokemonCatalogPort {
-  constructor(private readonly pokeApiClient: PokeApiClient) {}
+  constructor(
+    private readonly pokeApiClient: PokeApiClient,
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext(PokeApiCatalogAdapter.name);
+  }
 
   async getPage(offset: number, limit: number): Promise<PokemonCatalogPage> {
     try {
@@ -96,8 +102,20 @@ export class PokeApiCatalogAdapter implements PokemonCatalogPort {
 
   private handlePokeApiError(error: unknown, notFoundMessage: string): never {
     if (isAxiosError(error) && error.response?.status === 404) {
+      this.logger.warn('PokeAPI resource not found', {
+        notFoundMessage,
+        statusCode: error.response.status,
+        url: error.config?.url,
+      });
       throw new NotFoundException(notFoundMessage);
     }
+
+    this.logger.error('PokeAPI request failed', {
+      notFoundMessage,
+      statusCode: isAxiosError(error) ? error.response?.status : undefined,
+      url: isAxiosError(error) ? error.config?.url : undefined,
+      error: error instanceof Error ? error.message : 'Unknown PokeAPI error',
+    });
 
     throw new ServiceUnavailableException('PokeAPI is unavailable');
   }
