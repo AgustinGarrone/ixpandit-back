@@ -1,11 +1,19 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/features/auth/jwt/jwt-auth-guard';
+import {
+  JSendFailResponseDto,
+  JSendPokemonListResponseDto,
+  JSendPokemonResponseDto,
+  JSendPokemonTypesResponseDto,
+} from 'src/common/types/jsend.swagger.dto';
 import {
   ListPokemonQueryDto,
   PokemonResponseDto,
@@ -20,9 +28,14 @@ export class PokemonController {
   constructor(private readonly pokemonService: PokemonService) {}
 
   @Get('types')
+  @ApiOperation({
+    summary: 'List Pokemon types',
+    description:
+      'Returns all Pokemon types from PokeAPI. Useful for building type filters in the frontend.',
+  })
   @ApiOkResponse({
-    description: 'List of Pokemon types from PokeAPI',
-    type: JSendSuccess<PokemonTypeResponseDto[]>,
+    type: JSendPokemonTypesResponseDto,
+    description: 'Pokemon types retrieved successfully',
   })
   async getTypes(): Promise<JSendSuccess<PokemonTypeResponseDto[]>> {
     const types = await this.pokemonService.getTypes();
@@ -36,11 +49,19 @@ export class PokemonController {
   @Get('random')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOkResponse({
-    description: 'Random Pokemon from the full PokeAPI catalog',
-    type: JSendSuccess<PokemonResponseDto>,
+  @ApiOperation({
+    summary: 'Get a random Pokemon',
+    description:
+      'Picks a random Pokemon from the full PokeAPI catalog and returns its detail. Requires authentication.',
   })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiOkResponse({
+    type: JSendPokemonResponseDto,
+    description: 'Random Pokemon detail retrieved successfully',
+  })
+  @ApiUnauthorizedResponse({
+    type: JSendFailResponseDto,
+    description: 'Missing or invalid JWT',
+  })
   async getRandom(): Promise<JSendSuccess<PokemonResponseDto>> {
     const pokemon = await this.pokemonService.getRandom();
 
@@ -51,9 +72,18 @@ export class PokemonController {
   }
 
   @Get()
+  @ApiOperation({
+    summary: 'List Pokemon with pagination and filters',
+    description:
+      'Returns a paginated Pokemon catalog from PokeAPI. Supports optional filters by type and partial name match.',
+  })
   @ApiOkResponse({
-    description: 'List of Pokemon from PokeAPI',
-    type: JSendSuccess<PaginatedData<PokemonResponseDto>>,
+    type: JSendPokemonListResponseDto,
+    description: 'Paginated Pokemon list retrieved successfully',
+  })
+  @ApiBadRequestResponse({
+    type: JSendFailResponseDto,
+    description: 'Invalid query parameters',
   })
   async findAll(
     @Query() query: ListPokemonQueryDto,

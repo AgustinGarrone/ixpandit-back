@@ -28,11 +28,15 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Pokemon IXP API')
-    .setDescription('API for the Pokemon IXP project')
+    .setDescription(
+      'Backend API for the Pokemon IXP project. Responses follow the JSend format with status, data, message and meta fields.',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config, {
+    operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
+  });
   SwaggerModule.setup('api/v1/docs', app, document);
 
   const port = process.env.APP_PORT ?? 8100;

@@ -1,8 +1,24 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, Min } from 'class-validator';
 import { PaginationRequestQuery } from 'src/common/types/pagination-query.types';
 
-export class ListFavoritesQueryDto extends PaginationRequestQuery {}
+export class ListFavoritesQueryDto extends PaginationRequestQuery {
+  @ApiPropertyOptional({
+    type: Number,
+    description: 'Page number for favorite Pokemon list (starts at 1)',
+    example: 1,
+    default: 1,
+  })
+  declare page?: number;
+
+  @ApiPropertyOptional({
+    type: Number,
+    description: 'Number of favorite Pokemon per page',
+    example: 10,
+    default: 10,
+  })
+  declare limit?: number;
+}
 
 export class AddFavoriteDto {
   @ApiProperty({

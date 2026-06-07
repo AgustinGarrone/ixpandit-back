@@ -15,6 +15,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiParam,
   ApiTags,
   ApiTooManyRequestsResponse,
@@ -23,6 +24,12 @@ import {
 import { JwtAuthGuard } from 'src/features/auth/jwt/jwt-auth-guard';
 import type { JwtUser } from 'src/features/auth/types/jwt-user.type';
 import { GetUserFromJwt } from 'src/helpers/getUser.helper';
+import {
+  JSendFailResponseDto,
+  JSendPokemonListResponseDto,
+  JSendPokemonResponseDto,
+  JSendRemoveFavoriteResponseDto,
+} from 'src/common/types/jsend.swagger.dto';
 import { JSendSuccess, PaginatedData } from 'src/common/types/jsend.types';
 import { PokemonResponseDto } from 'src/features/pokemon/dto/list-pokemon.dto';
 import {
@@ -40,13 +47,22 @@ export class FavoritesController {
   constructor(private readonly favoritesService: FavoritesService) {}
 
   @Get()
-  @ApiOkResponse({
-    description: 'Paginated list of favorite Pokemon for the authenticated user',
-    type: JSendSuccess<PaginatedData<PokemonResponseDto>>,
+  @ApiOperation({
+    summary: 'List favorite Pokemon',
+    description:
+      'Returns the authenticated user favorites with pagination. Each item includes the Pokemon snapshot stored when it was favorited.',
   })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiOkResponse({
+    type: JSendPokemonListResponseDto,
+    description: 'Favorites retrieved successfully',
+  })
+  @ApiUnauthorizedResponse({
+    type: JSendFailResponseDto,
+    description: 'Missing or invalid JWT',
+  })
   @ApiTooManyRequestsResponse({
-    description: 'Too many requests to list favorites',
+    type: JSendFailResponseDto,
+    description: 'Too many requests',
   })
   async findAll(
     @GetUserFromJwt() user: JwtUser,
@@ -61,15 +77,27 @@ export class FavoritesController {
   }
 
   @Post()
+  @ApiOperation({
+    summary: 'Add Pokemon to favorites',
+    description:
+      'Fetches the Pokemon from PokeAPI, stores a snapshot in the database and associates it with the authenticated user.',
+  })
   @ApiBody({ type: AddFavoriteDto })
   @ApiCreatedResponse({
+    type: JSendPokemonResponseDto,
     description: 'Pokemon added to favorites',
-    type: JSendSuccess<PokemonResponseDto>,
   })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
-  @ApiConflictResponse({ description: 'Pokemon is already in favorites' })
+  @ApiUnauthorizedResponse({
+    type: JSendFailResponseDto,
+    description: 'Missing or invalid JWT',
+  })
+  @ApiConflictResponse({
+    type: JSendFailResponseDto,
+    description: 'Pokemon is already in favorites',
+  })
   @ApiTooManyRequestsResponse({
-    description: 'Too many requests to add favorite',
+    type: JSendFailResponseDto,
+    description: 'Too many requests',
   })
   async addFavorite(
     @GetUserFromJwt() user: JwtUser,
@@ -87,6 +115,11 @@ export class FavoritesController {
   }
 
   @Delete(':pokeapiId')
+  @ApiOperation({
+    summary: 'Remove Pokemon from favorites',
+    description:
+      'Removes a Pokemon from the authenticated user favorites. If it was not favorited, the operation completes without error.',
+  })
   @ApiParam({
     name: 'pokeapiId',
     type: Number,
@@ -94,12 +127,16 @@ export class FavoritesController {
     example: 25,
   })
   @ApiOkResponse({
+    type: JSendRemoveFavoriteResponseDto,
     description: 'Favorite removal result',
-    type: JSendSuccess<RemoveFavoriteResponseDto>,
   })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiUnauthorizedResponse({
+    type: JSendFailResponseDto,
+    description: 'Missing or invalid JWT',
+  })
   @ApiTooManyRequestsResponse({
-    description: 'Too many requests to remove favorite',
+    type: JSendFailResponseDto,
+    description: 'Too many requests',
   })
   async removeFavorite(
     @GetUserFromJwt() user: JwtUser,
