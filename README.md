@@ -267,6 +267,7 @@ Esperá ~1 minuto y probá: http://localhost:8100/health
 #### Paso 2 — Frontend
 
 ```bash
+cd ..
 git clone https://github.com/AgustinGarrone/ixpandit-front.git
 cd ixpandit-front
 docker compose up -d --build
