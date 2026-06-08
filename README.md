@@ -4,6 +4,37 @@ Prueba técnica Pokémon — **Next.js** (frontend) + **NestJS** (BFF) + **Postg
 
 El front consume exclusivamente el backend; el backend es quien habla con PokeAPI y la base de datos. Ambos comparten el contrato **JSend** para requests y respuestas.
 
+## Índice
+
+1. [Por qué está hecho así (Sistema - Backend)](#por-qué-está-hecho-así-sistema---backend)
+   - [El servicio semilla (la primera idea)](#el-servicio-semilla-la-primera-idea)
+   - [Por qué no seguí por ahí](#por-qué-no-seguí-por-ahí)
+   - [Lo que hice en cambio](#lo-que-hice-en-cambio)
+   - [Caché y servicio degradado](#caché-y-servicio-degradado)
+   - [Dónde quedó la persistencia](#dónde-quedó-la-persistencia)
+   - [Autenticación (backend)](#autenticación-backend)
+   - [Respuestas con JSend](#respuestas-con-jsend)
+   - [Logging con Pino](#logging-con-pino)
+   - [Health check](#health-check)
+2. [Frontend (Next.js)](#frontend-nextjs)
+   - [Capa de datos con TanStack Query](#capa-de-datos-con-tanstack-query)
+   - [Cliente HTTP tipado + contrato JSend](#cliente-http-tipado--contrato-jsend)
+   - [Auth JWT sin recargar la página](#auth-jwt-sin-recargar-la-página)
+   - [UX de favoritos con estado optimista](#ux-de-favoritos-con-estado-optimista)
+3. [Arquitectura](#arquitectura)
+   - [Aplicación (módulos backend)](#aplicación-módulos-backend)
+   - [Despliegue actual: EC2 + RDS](#despliegue-actual-ec2--rds)
+   - [Propuesta cloud (si fuera más productivo)](#propuesta-cloud-si-fuera-más-productivo)
+   - [Limitación actual: caché y throttling en memoria local](#limitación-actual-caché-y-throttling-en-memoria-local)
+4. [Stack](#stack)
+5. [Cómo probarlo](#cómo-probarlo)
+   - [Demo en EC2 (recomendado)](#demo-en-ec2-recomendado)
+   - [Correr en local con Docker](#correr-en-local-con-docker)
+     - [Paso 1 — Backend (Postgres + API)](#paso-1--backend-postgres--api)
+     - [Paso 2 — Frontend](#paso-2--frontend)
+     - [Parar todo](#parar-todo)
+6. [API — Endpoints principales](#api--endpoints-principales)
+
 ---
 
 ## Por qué está hecho así (Sistema - Backend)
