@@ -1,12 +1,14 @@
-# ixp-pok-back
+# ixp-pokemon
 
-Backend de la prueba técnica Pokémon — NestJS, PostgreSQL y PokeAPI.
+Prueba técnica Pokémon — **Next.js** (frontend) + **NestJS** (BFF) + **PostgreSQL** + **PokeAPI**.
+
+El front consume exclusivamente el backend; el backend es quien habla con PokeAPI y la base de datos. Ambos comparten el contrato **JSend** para requests y respuestas.
 
 ---
 
-## Por qué está hecho así
+## Por qué está hecho así (Sistema - Backend)
 
-> La idea es empezar mostrando el razonamiento, antes de hablar de endpoints o de cómo levantarlo.
+> La idea es empezar mostrando el razonamiento
 
 ### El servicio semilla (la primera idea)
 
@@ -38,7 +40,7 @@ También implementé **caché a nivel local** para:
 - ser más eficiente con los tiempos de respuesta,
 - y, por si el servicio de la PokeAPI se cae, poder brindar un **servicio degradado** (lo que ya esté cacheado sigue respondiendo).
 
-Configurable por env — ver `.env.example`:
+Configurable por env — ver `.env.example` del backend:
 
 | Variable                    | Default | Qué cachea        |
 | --------------------------- | ------- | ----------------- |
@@ -47,13 +49,13 @@ Configurable por env — ver `.env.example`:
 | `POKEAPI_CACHE_MAX_PAGES`   | 30      | Páginas paginadas |
 | `POKEAPI_CACHE_MAX_TYPES`   | 20      | Filtros por tipo  |
 
-la caché cuenta con un sistema LRU (Least Recently Used) para no ocupar mucha ram.. si se llena la cantidad maxima que le seteamos de caché, saca la clave que se usó hace más tiempo. Esto porque mi objetivo era desplegarlo en AWS para agilizarles pruebas y en una t3.small que fue la que elegí, para levantar los servicios no es que estaba sobrado.
+La caché cuenta con un sistema LRU (Least Recently Used) para no ocupar mucha RAM...si se llena la cantidad máxima que le seteamos, saca la clave que se usó hace más tiempo. Esto porque mi objetivo era desplegarlo en AWS para agilizarles pruebas y en una `t3.small` no estaba sobrado de recursos.
 
 ### Dónde quedó la persistencia
 
 El catálogo vive en PokeAPI en tiempo real. La DB guarda lo propio de la app: usuarios y favoritos con **snapshot** (`name`, `imageUrl`, `type`, `abilities`) al momento de guardarlos.
 
-### Autenticación
+### Autenticación (backend)
 
 Metí auth con **JWT** y un solo **token de acceso**. Si bien lo recomendado para estos casos es contar con 2 tokens (access + refresh), por temas de tiempo y para no hacer sobreingeniería lo dejé así.
 
@@ -63,9 +65,9 @@ Las rutas protegidas (favoritos, Pokémon aleatorio, etc.) lo esperan en el head
 
 ### Respuestas con JSend
 
-Para la gestión de respuestas de la API usé **[JSend](https://github.com/omniti-labs/jsend)**, un estándar que unifica el formato de éxito y error. Todas las respuestas siguen la misma estructura:
+Para la gestión de respuestas de la API usé **[JSend](https://github.com/omniti-labs/jsend)**, un estándar que unifica el formato de éxito y error. Todas las respuestas siguen la misma estructura (`status`, `data`, `message`, `meta`).
 
-Lo implementé con un interceptor global (`JSendInterceptor`) y un exception filter (`JSendExceptionFilter`) para que controllers y errores hablen el mismo idioma.
+Lo implementé con un interceptor global (`JSendInterceptor`) y un exception filter (`JSendExceptionFilter`) para que controllers y errores hablen el mismo idioma. El frontend tipa y consume ese mismo contrato.
 
 ### Logging con Pino
 
@@ -83,20 +85,60 @@ Hay un endpoint de health importante: **`GET /health`** (fuera del prefijo `/api
 
 Usa **NestJS Terminus** y reporta el estado de cada dependencia por separado:
 
-| Componente | Qué verifica |
-|------------|--------------|
-| `api` | Que el proceso Nest responde |
-| `database` | Conectividad con PostgreSQL (Prisma ping) |
-| `pokeapi` | Que PokeAPI responde (ping a `/pokemon?limit=1`) |
+| Componente | Qué verifica                                     |
+| ---------- | ------------------------------------------------ |
+| `api`      | Que el proceso Nest responde                     |
+| `database` | Conectividad con PostgreSQL (Prisma ping)        |
+| `pokeapi`  | Que PokeAPI responde (ping a `/pokemon?limit=1`) |
 
 Si alguno está caído, responde **503** con el detalle en formato JSend. Sirve para monitoreo en deploy (Docker, ECS, ALB target health) y para saber si estás sirviendo catálogo en vivo o solo desde caché cuando PokeAPI falla.
 
 ---
+
+## Frontend (Next.js)
+
+### Capa de datos con TanStack Query
+
+la uso para **orquestar server state** con criterio de caché del lado del cliente e invalidación.
+
+- **Queries** para listado de Pokémon, tipos y favoritos (`usePokemonList`, `useFavoritesList`, etc.).
+- **Mutations** para login, registro, favoritos y huevo aleatorio.
+- **Query keys centralizadas** (`pokemonKeys`, `favoritesKeys`) para invalidación predecible.
+- `staleTime: 60s` en el `QueryClient` global — evita refetch innecesario al navegar.
+- **Invalidación de favoritos** tras add/remove para que la UI y el servidor no se desincronicen.
+
+### Cliente HTTP tipado + contrato JSend
+
+El front en src/clients maneja todo lo que tiene que ver con clientes http, que extienden de una unica configuracion RESTClient,
+cada dominio/feat tiene su propio cliente.
+
+- **`RESTClient`** base con Axios, timeout e interceptores.
+- `withAuth: true` para inyectar el JWT automáticamente en rutas protegidas.
+- Tipos compartidos con el contrato del API (`JSendSuccess`, `JSendFailure`).
+- **`api-error.utils`**: mapeo de errores del API a mensajes de UX (401, 409, mensajes JSend del `message`).
+
+Mismo idioma que el BFF: si el back responde JSend, el front lo parsea y muestra algo entendible.
+
+### Auth JWT sin recargar la página
+
+- Token en **`localStorage`**.
+- **`AuthProvider`** + **`auth-store`** con `useSyncExternalStore` para re-render al login/logout sin recargar.
+- Modal unificado login/registro con validación **Zod** alineada al DTO del backend (usuario 4–15 chars, password 6–20).
+
+### UX de favoritos con estado optimista
+
+- **Mismo grid** para búsqueda y favoritos — una sola experiencia visual.
+- **Optimistic updates** al guardar/quitar: la UI responde al instante y se reconcilia con el servidor.
+- Paginación con lógica distinta entre Pokémon y favoritos (`favorites.utils`) — el back pagina distinto en cada caso.
+- Toast/alertas si el usuario no está logueado e intenta una acción protegida.
+
+---
+
 ## Arquitectura
 
-NestJS actúa como **Backend for Frontend (BFF)**: es el único punto de entrada del frontend (Next.js). El cliente no habla directo con PokeAPI ni con PostgreSQL; todo pasa por esta capa, que adapta las respuestas al contrato que necesita el front (formato **JSend**: `status`, `data`, `message`, `meta`).
+NestJS actúa como **Backend for Frontend (BFF)**: es el único punto de entrada del frontend (Next.js). El cliente no habla directo con PokeAPI ni con PostgreSQL
 
-### Aplicación (módulos)
+### Aplicación (módulos backend)
 
 ![Diagrama de arquitectura de la app](./docs/arquitectura.png)
 
@@ -111,7 +153,7 @@ NestJS actúa como **Backend for Frontend (BFF)**: es el único punto de entrada
 
 ### Despliegue actual: EC2 + RDS
 
-Lo levanté en una **EC2** (`t3.small`) con el backend en Docker y la base en **RDS PostgreSQL**. El front va en la misma EC2 detrás de nginx, que actúa como reverse proxy hacia el API.
+Lo levanté en una **EC2** (`t3.small`) con el backend en Docker y la base en **RDS PostgreSQL**. El front (Next.js) va en la misma EC2 detrás de nginx, que actúa como reverse proxy: `/` → front, `/api` → BFF.
 
 Este setup alcanza para la prueba técnica: **una sola instancia** del backend, sin necesidad de coordinar estado entre réplicas.
 
@@ -127,95 +169,92 @@ Si el tráfico creciera o quisiera **escalar horizontalmente**, un enfoque posib
 
 Hoy tanto la **caché de PokeAPI** (`LruTtlCache` en RAM) como el **rate limiting** (`@nestjs/throttler`, contadores en memoria del proceso) funcionan **a nivel local de cada instancia**.
 
-Eso está bien con **1 réplica** (EC2 única). En caso de querer escalar horizontalmente deberíamos modificar la forma de uso de la caché hacia un servicio distribuido como elasticaché y asociar el estrangulamiento a esa caché o utilizar otro recurso como un Web application firewall
+Eso está bien con **1 réplica** (EC2 única). En caso de querer escalar horizontalmente deberíamos modificar la forma de uso de la caché hacia un
+servicio distribuido como elasticaché y asociar el estrangulamiento a esa caché o utilizar otro recurso como un Web application firewall
 
-Por eso en el diagrama cloud Redis no es decorativo: es el paso necesario para que caché y throttling sigan siendo efectivos con **escalado horizontal**.
+Por eso en el diagrama cloud Redis no es decorativo: es el paso necesario para que caché y throttling sigan siendo efectivos con **escalado
+horizontal**.
 
 ---
 
 ## Stack
 
-- **NestJS 11** — framework
-- **Prisma + PostgreSQL** — persistencia (usuarios, favoritos)
-- **Passport JWT** — autenticación
-- **PokeAPI** — catálogo en tiempo real
-- **Terminus** — health checks
-- **JSend** — formato estándar de respuestas API
-- **Pino** — logging estructurado con tracing por `requestId`
-- **Swagger** — documentación en `/api/v1/docs`
-- **Docker** — despliegue
+| Capa         | Tecnologías                                                 |
+| ------------ | ----------------------------------------------------------- |
+| **Frontend** | Next.js, TanStack Query, Axios, Zod, `useSyncExternalStore` |
+| **Backend**  | NestJS 11, Prisma, Passport JWT, Terminus, Pino, Swagger    |
+| **Datos**    | PostgreSQL (RDS), PokeAPI                                   |
+| **Contrato** | JSend (request/response tipado en ambos lados)              |
+| **Deploy**   | Docker, EC2, nginx                                          |
 
 ---
 
-## Cómo levantarlo
+## Cómo probarlo
 
-### Desarrollo local (con Docker)
+### Demo en EC2 (recomendado)
+
+Lo desplegué en una **EC2** (`t3.small`) con **RDS PostgreSQL**, **nginx** como reverse proxy (front Next.js + BFF NestJS en la misma máquina) y el backend en Docker.
+
+**Forma recomendada de probarlo:** entrar a
+
+**http://ec2-3-144-176-202.us-east-2.compute.amazonaws.com/**
+
+> **Importante:** usar **HTTP**, no HTTPS. No hay certificado ni cifrado configurado. Si el navegador intenta redirigir a `https://`, cancelá o abrí la URL explícitamente con `http://` — de lo contrario la app no va a cargar.
+
+Desde ahí podés registrarte, buscar Pokémon, guardar favoritos y probar el huevo aleatorio.
+
+| Recurso | URL                                                                  |
+| ------- | -------------------------------------------------------------------- |
+| App     | http://ec2-3-144-176-202.us-east-2.compute.amazonaws.com/            |
+| Swagger | http://ec2-3-144-176-202.us-east-2.compute.amazonaws.com/api/v1/docs |
+| Health  | http://ec2-3-144-176-202.us-east-2.compute.amazonaws.com/health      |
+
+Variables de entorno de referencia para este deploy: [`.env.example.ec2deploy`](.env.example.ec2deploy).
+
+### Correr en local con Docker
+
+Si bien se recomienda aprovechar la instancia cloud.. para verlo localmente se pueden seguir estos pasos:
+**Requisitos:** Docker y Docker Compose instalados.
+
+Repos:
+
+- Backend: https://github.com/AgustinGarrone/ixpandit-back
+- Frontend: https://github.com/AgustinGarrone/ixpandit-front
+
+El orden importa: primero el back (Postgres + API), después el front.
+
+#### Paso 1 — Backend (Postgres + API)
 
 ```bash
-cp .env.example .env
-docker compose up --build
+git clone https://github.com/AgustinGarrone/ixpandit-back.git
+cd ixpandit-back
+docker compose up -d --build
 ```
 
-| Servicio   | URL                               |
-| ---------- | --------------------------------- |
-| API        | http://localhost:8100             |
-| Swagger    | http://localhost:8100/api/v1/docs |
-| Health     | http://localhost:8100/health      |
-| PostgreSQL | localhost:5432                    |
+Esperá ~1 minuto y probá: http://localhost:8100/health
 
-Las migraciones Prisma se aplican solas al arrancar el contenedor (`prisma migrate deploy` en el entrypoint del `Dockerfile`).
-
-### Desarrollo local (sin Docker)
+#### Paso 2 — Frontend
 
 ```bash
-npm install
-cp .env.example .env   # apuntar DATABASE_URL a tu Postgres local
-npm run prisma:migrate
-npm run start:dev
+git clone https://github.com/AgustinGarrone/ixpandit-front.git
+cd ixpandit-front
+docker compose up -d --build
 ```
 
-Variables mínimas en `.env`:
+Abrí: http://localhost:3000
 
-```env
-DATABASE_URL=postgresql://...
-JWT_SECRET=...
-CORS_ORIGIN=http://localhost:3000
-APP_PORT=8100
+#### Parar todo
+
+```bash
+# En cada repo:
+docker compose down
 ```
-
-Ver `.env.example` para throttling, logging y configuración de caché.
 
 ---
 
-## Despliegue (EC2 + RDS)
+## API — Endpoints principales
 
-En producción la base va en **RDS PostgreSQL**; la EC2 corre solo el backend (y el front detrás de nginx).
-
-```bash
-docker build -t ixp-pok-back .
-docker run -d \
-  --name ixp-pok-api \
-  --restart unless-stopped \
-  -p 127.0.0.1:8100:8100 \
-  --env-file .env.prod \
-  ixp-pok-back
-```
-
-`.env.prod` mínimo:
-
-```env
-DATABASE_URL=postgresql://user:pass@rds-endpoint:5432/gts-pokemon-db?sslmode=require
-JWT_SECRET=...
-CORS_ORIGIN=http://TU_IP_O_DOMINIO
-APP_PORT=8100
-NODE_ENV=production
-```
-
-Ver `docker-compose.prod.example.yml` para referencia.
-
----
-
-## Endpoints principales
+![Swagger — endpoints de la API](./docs/swagger.png)
 
 | Método | Ruta                           | Auth | Descripción                        |
 | ------ | ------------------------------ | ---- | ---------------------------------- |
@@ -227,24 +266,8 @@ Ver `docker-compose.prod.example.yml` para referencia.
 | GET    | `/api/v1/favorites`            | JWT  | Favoritos del usuario              |
 | POST   | `/api/v1/favorites`            | JWT  | Agregar favorito                   |
 | DELETE | `/api/v1/favorites/:pokeapiId` | JWT  | Quitar favorito                    |
-| GET    | `/health`                      | —    | Estado DB + PokeAPI                |
+| GET    | `/health`                      | —    | Estado API + DB + PokeAPI          |
 
-Documentación interactiva: **http://localhost:8100/api/v1/docs**
-
----
-
-## Testing
-
-Me hubiera gustado meter **tests automatizados**, pero no llegué con los tiempos.
-
-Lo que más priorizaría:
-
-| Área                              | Qué probar                                                            | Por qué                                                         |
-| --------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------- |
-| **`PokeApiCatalogAdapter`**       | Mapeo de respuestas, errores 404/503, normalización al modelo interno | Es el punto de contacto con un servicio externo poco confiable  |
-| **`CachedPokeApiCatalogAdapter`** | Cache hit/miss, TTL, delegación al adapter real                       | Asegura que la caché no devuelva basura ni oculte fallos reales |
-| **`PokemonService`**              | Filtros, paginación, random                                           | Lógica de dominio que depende del port                          |
-
-El adapter de PokeAPI es **crítico**: si falla el mapeo o el manejo de errores, se rompe todo el catálogo. Tests con mocks de axios/PokeAPI (unit) y, con más tiempo, contract tests contra la API real (integración).
+Documentación interactiva: **http://ec2-3-144-176-202.us-east-2.compute.amazonaws.com/api/v1/docs**
 
 ---
